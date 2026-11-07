@@ -415,6 +415,63 @@
     gap: 14px;
     flex-wrap: wrap;
   }
+
+  /* Remboursements anticipés */
+  .panel-title {
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin: 0 0 4px;
+  }
+  .panel-caption { font-size: 0.8rem; color: var(--ink-soft); margin: 0 0 16px; }
+  .ra-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .ra-row {
+    display: grid;
+    grid-template-columns: 74px 1fr 30px;
+    gap: 6px;
+    align-items: center;
+  }
+  .ra-row input { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; padding: 7px 8px; font-size: 0.88rem; }
+  .ra-head { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
+  .ra-del {
+    font: inherit; font-size: 1rem; line-height: 1;
+    color: var(--ink-soft); background: transparent;
+    border: 1px solid var(--line); border-radius: 3px;
+    height: 32px; cursor: pointer;
+  }
+  .ra-del:hover { color: var(--warn); border-color: var(--warn); }
+  .btn-ghost {
+    font: inherit; font-size: 0.82rem;
+    color: var(--accent-ink); background: var(--accent-soft);
+    border: none; border-radius: 3px;
+    padding: 7px 12px; cursor: pointer;
+  }
+  .btn-ghost:hover { filter: brightness(0.97); }
+  .ra-empty { font-size: 0.83rem; color: var(--ink-faint); margin: 0 0 10px; }
+
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .seg label {
+    flex: 1; text-align: center; font-size: 0.82rem; padding: 8px 6px;
+    cursor: pointer; color: var(--ink-soft); background: var(--surface);
+  }
+  .seg label + label { border-left: 1px solid var(--line); }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg input:checked + span { color: var(--ink); font-weight: 600; }
+  .seg label:has(input:checked) { background: var(--accent-soft); }
+  .seg label:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+  .compare { margin-top: 20px; }
+  .compare-scroll { overflow-x: auto; }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  table.cmp th, table.cmp td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  table.cmp th:first-child, table.cmp td:first-child { text-align: left; color: var(--ink-soft); white-space: normal; }
+  table.cmp thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); font-weight: 600; }
+  table.cmp td { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  table.cmp td:first-child { font-family: inherit; }
+  table.cmp tr:last-child td { border-bottom: none; }
+  table.cmp .sel { background: var(--accent-soft); }
+  table.cmp .gain { color: var(--good); font-weight: 600; }
+  table.cmp .loss { color: var(--warn); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -519,6 +576,34 @@
           <div class="guarantee-note" id="garantie-note"></div>
         </div>
       </div>
+
+      <div class="panel" id="ra-panel">
+        <h3 class="panel-title">Remboursements anticipés</h3>
+        <p class="panel-caption">Versements ponctuels effectués à la fin du mois indiqué.</p>
+
+        <div class="field">
+          <label class="field-label">Après remboursement</label>
+          <div class="seg" role="radiogroup">
+            <label><input type="radio" name="ra-mode" value="duree" checked><span>Réduire la durée</span></label>
+            <label><input type="radio" name="ra-mode" value="mensualite"><span>Réduire la mensualité</span></label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Versements</label>
+          <div class="ra-list" id="ra-list"></div>
+          <button class="btn-ghost" id="ra-add" type="button">+ Ajouter un versement</button>
+        </div>
+
+        <div class="field" style="margin-bottom:0;">
+          <label class="field-label" for="ira-num">Indemnité (IRA)</label>
+          <div class="num-row">
+            <input type="number" id="ira-num" step="0.5" min="0">
+            <span class="unit">mois d'intérêts</span>
+          </div>
+          <p class="rate-suggest">Calculée sur la somme remboursée — à ajuster selon votre contrat.</p>
+        </div>
+      </div>
     </div>
 
     <div class="col-right">
@@ -526,7 +611,7 @@
         <div class="hero-card primary">
           <div class="hero-label">Mensualité TTC</div>
           <div class="hero-num" id="hero-ttc">—</div>
-          <div class="hero-sub">avec assurance</div>
+          <div class="hero-sub" id="hero-ttc-sub">avec assurance</div>
         </div>
         <div class="hero-card">
           <div class="hero-label">Mensualité hors assurance</div>
@@ -540,6 +625,7 @@
         <div class="detail-row"><span class="k">Taux nominal HT</span><span class="v" id="d-taux">—</span></div>
         <div class="detail-row"><span class="k">Durée du crédit</span><span class="v" id="d-duree">—</span></div>
         <div class="detail-row"><span class="k">Frais de dossier</span><span class="v" id="d-frais">—</span></div>
+        <div class="detail-row" id="d-ra-row" hidden><span class="k">Remboursements anticipés</span><span class="v" id="d-ra">—</span></div>
         <div class="detail-row total"><span class="k">Coût total du crédit TTC</span>
           <span class="v" id="d-total">—<span class="sub" id="d-total-sub"></span></span>
         </div>
@@ -559,6 +645,12 @@
           <p class="chart-caption">Part capital / intérêts de chaque mensualité, par année</p>
           <svg id="bars" viewBox="0 0 560 240" width="100%" height="240" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
+      </div>
+
+      <div class="panel compare" id="compare-panel" hidden>
+        <h3 class="chart-title">Comparaison des scénarios</h3>
+        <p class="chart-caption">Mêmes versements anticipés, appliqués selon chaque option. La colonne surlignée est celle affichée ci-dessus.</p>
+        <div class="compare-scroll"><table class="cmp" id="compare-table"></table></div>
       </div>
 
       <footer class="note">
@@ -626,6 +718,8 @@
   const tauxNum = $('taux-num'), tauxSuggestLine = $('taux-suggest-line'), tauxReset = $('taux-reset');
   const assuranceNum = $('assurance-num'), fraisNum = $('frais-num');
   const garantieNote = $('garantie-note');
+  const iraNum = $('ira-num');
+  let raList = [];  // versements anticipés : [{ mois, montant }]
 
   function fmt(n, dec) {
     return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: dec||0, maximumFractionDigits: dec||0 }).format(n);
@@ -698,19 +792,74 @@
   }
 
   // --- Amortization math ---
-  function computeSchedule(capital, tauxAnnuel, nMonths, assuranceAnnuel) {
+  const EPS = 0.005;
+
+  function annuity(capital, i, n) {
+    if (n <= 0) return capital;
+    return i === 0 ? capital / n : capital * i / (1 - Math.pow(1 + i, -n));
+  }
+
+  // Indemnité de remboursement anticipé pour un versement.
+  //   montantRembourse : somme versée par anticipation (DH)
+  //   tauxMensuel      : taux nominal mensuel (ex. 0.045/12)
+  //   crdAvant         : capital restant dû juste avant le versement (DH)
+  //   iraMois          : valeur saisie dans le champ « Indemnité (IRA) »
+  function computeIRA(montantRembourse, tauxMensuel, crdAvant, iraMois) {
+    // N mois d'intérêts sur la somme remboursée (sans plafond — à adapter au contrat)
+    return Math.max(0, montantRembourse * tauxMensuel * (iraMois || 0));
+  }
+
+  // Versements anticipés valides, regroupés par mois (fin de mois).
+  function prepaymentsByMonth(list, nMonths) {
+    const byMonth = new Map();
+    (list || []).forEach(p => {
+      const m = Math.round(parseFloat(p.mois));
+      const a = parseFloat(p.montant);
+      if (m >= 1 && m < nMonths && a > 0) byMonth.set(m, (byMonth.get(m) || 0) + a);
+    });
+    return byMonth;
+  }
+
+  function computeSchedule(capital, tauxAnnuel, nMonths, assuranceAnnuel, opts) {
+    const { prepayments = [], mode = 'duree', iraMois = 0 } = opts || {};
     const i = tauxAnnuel / 100 / 12;
-    const mensCapitalInteret = i === 0 ? capital / nMonths : capital * i / (1 - Math.pow(1 + i, -nMonths));
+    const mensCapitalInteret = annuity(capital, i, nMonths);
     const assuranceMensuelle = capital * (assuranceAnnuel / 100) / 12;
+    const byMonth = prepaymentsByMonth(prepayments, nMonths);
+
+    let pay = mensCapitalInteret;
     let remaining = capital;
+    let totalRA = 0, totalIRA = 0;
     const rows = [];
-    for (let m = 1; m <= nMonths; m++) {
+    for (let m = 1; m <= nMonths && remaining > EPS; m++) {
       const interet = remaining * i;
-      const principal = mensCapitalInteret - interet;
+      const principal = Math.min(pay - interet, remaining);
       remaining -= principal;
-      rows.push({ m, interet, principal, assurance: assuranceMensuelle });
+
+      let ra = 0, ira = 0;
+      if (byMonth.has(m) && remaining > EPS) {
+        ra = Math.min(byMonth.get(m), remaining);
+        ira = computeIRA(ra, i, remaining, iraMois) || 0;
+        remaining -= ra;
+        // « Réduire la mensualité » : on garde l'échéance finale, on recalcule l'annuité.
+        // « Réduire la durée » : la mensualité reste identique, le prêt s'arrête plus tôt.
+        if (mode === 'mensualite' && remaining > EPS) pay = annuity(remaining, i, nMonths - m);
+      }
+      totalRA += ra; totalIRA += ira;
+      rows.push({ m, interet, principal, assurance: assuranceMensuelle, ra, ira });
     }
-    return { mensCapitalInteret, assuranceMensuelle, rows };
+    return { mensCapitalInteret, finalPay: pay, assuranceMensuelle, rows, totalRA, totalIRA };
+  }
+
+  function summarize(sched, capital, frais) {
+    const totalInterets = sched.rows.reduce((s,r) => s + r.interet, 0);
+    const totalAssurance = sched.rows.reduce((s,r) => s + r.assurance, 0);
+    return {
+      ...sched,
+      totalInterets, totalAssurance,
+      dureeEff: sched.rows.length,
+      coutTotal: capital + totalInterets + totalAssurance + sched.totalIRA + frais,
+    };
   }
 
   function aggregateByYear(rows) {
@@ -727,8 +876,9 @@
     return years;
   }
 
-  function drawDonut(principal, interet, assurance) {
-    const total = principal + interet + assurance;
+  function drawDonut(principal, interet, assurance, indemnites) {
+    indemnites = indemnites || 0;
+    const total = principal + interet + assurance + indemnites;
     const svg = $('donut');
     const legend = $('donut-legend');
     if (total <= 0) { svg.innerHTML = ''; legend.innerHTML = ''; return; }
@@ -738,6 +888,7 @@
       { label: 'Intérêts', value: interet, color: 'var(--warn)' },
       { label: 'Assurance', value: assurance, color: 'var(--good)' },
     ];
+    if (indemnites > 0) parts.push({ label: 'Indemnités RA', value: indemnites, color: 'var(--ink-faint)' });
     let acc = -90;
     const circumference = 2 * Math.PI * r;
     let svgParts = '';
@@ -794,32 +945,115 @@
     svg.innerHTML = gridlines + bars;
   }
 
+  function moisLabel(n) {
+    return n + ' mois' + (n >= 12 ? ` (${(n/12).toFixed(1).replace(/\.0$/,'')} ans)` : '');
+  }
+
+  function currentMode() {
+    const r = document.querySelector('input[name="ra-mode"]:checked');
+    return r ? r.value : 'duree';
+  }
+
+  function drawCompare(base, scen, mode) {
+    const cols = [
+      { key: 'base', label: 'Sans RA', s: base },
+      { key: 'duree', label: 'Réduire la durée', s: scen.duree },
+      { key: 'mensualite', label: 'Réduire la mensualité', s: scen.mensualite },
+    ];
+    const cls = c => c.key === mode ? ' class="sel"' : '';
+    const line = (label, f) => `<tr><td>${label}</td>${cols.map(c => `<td${cls(c)}>${f(c.s, c)}</td>`).join('')}</tr>`;
+    const gain = (s, c) => {
+      if (c.key === 'base') return '—';
+      const g = base.coutTotal - s.coutTotal;
+      return `<span class="${g >= 0 ? 'gain' : 'loss'}">${g >= 0 ? '+' : '−'}${dh(Math.abs(g))}</span>`;
+    };
+    $('compare-table').innerHTML =
+      `<thead><tr><th></th>${cols.map(c => `<th${cls(c)}>${c.label}</th>`).join('')}</tr></thead><tbody>` +
+      line('Durée effective', s => moisLabel(s.dureeEff)) +
+      line('Mensualité finale TTC', s => dh(s.finalPay + s.assuranceMensuelle, 2)) +
+      line('Intérêts totaux', s => dh(s.totalInterets)) +
+      line('Assurance totale', s => dh(s.totalAssurance)) +
+      line('Indemnités RA', s => dh(s.totalIRA)) +
+      line('Coût total TTC', s => dh(s.coutTotal)) +
+      line('Économie nette', gain) +
+      '</tbody>';
+  }
+
   function recompute() {
     const capital = parseFloat(montantNum.value) || 0;
     const nMonths = parseInt(dureeNum.value) || 1;
     const taux = parseFloat(tauxNum.value) || 0;
     const assuranceAnnuel = parseFloat(assuranceNum.value) || 0;
     const frais = parseFloat(fraisNum.value) || 0;
+    const iraMois = parseFloat(iraNum.value) || 0;
+    const mode = currentMode();
 
-    const { mensCapitalInteret, assuranceMensuelle, rows } = computeSchedule(capital, taux, nMonths, assuranceAnnuel);
-    const mensTTC = mensCapitalInteret + assuranceMensuelle;
+    const run = m => summarize(computeSchedule(capital, taux, nMonths, assuranceAnnuel,
+      m ? { prepayments: raList, mode: m, iraMois } : null), capital, frais);
+    const base = run(null);
+    const hasRA = prepaymentsByMonth(raList, nMonths).size > 0;
+    const scen = hasRA ? { duree: run('duree'), mensualite: run('mensualite') } : null;
+    const s = hasRA ? scen[mode] : base;
 
-    const totalInterets = rows.reduce((s,r) => s + r.interet, 0);
-    const totalAssurance = rows.reduce((s,r) => s + r.assurance, 0);
-    const coutTotal = capital + totalInterets + totalAssurance + frais;
-
+    const mensTTC = s.mensCapitalInteret + s.assuranceMensuelle;
     $('hero-ttc').textContent = dh(mensTTC, 2);
-    $('hero-hors').textContent = dh(mensCapitalInteret, 2);
+    $('hero-ttc-sub').textContent = !hasRA ? 'avec assurance'
+      : mode === 'mensualite'
+        ? `puis ${dh(s.finalPay + s.assuranceMensuelle, 2)} après versement(s)`
+        : `fin au mois ${s.dureeEff} au lieu de ${nMonths}`;
+    $('hero-hors').textContent = dh(s.mensCapitalInteret, 2);
     $('hero-hors-sub').textContent = `${taux.toFixed(2)}% sur ${fmt(capital)} DH`;
 
     $('d-montant').textContent = dh(capital);
     $('d-taux').textContent = taux.toFixed(2) + ' %';
-    $('d-duree').textContent = nMonths + ' mois' + (nMonths >= 12 ? ` (${(nMonths/12).toFixed(1).replace(/\.0$/,'')} ans)` : '');
+    $('d-duree').innerHTML = moisLabel(s.dureeEff) +
+      (hasRA && s.dureeEff !== nMonths ? `<span class="sub">au lieu de ${moisLabel(nMonths)}</span>` : '');
     $('d-frais').textContent = dh(frais);
-    $('d-total').innerHTML = dh(coutTotal) + `<span class="sub">dont intérêts ${dh(totalInterets)} · assurance ${dh(totalAssurance)}</span>`;
+    $('d-ra-row').hidden = !hasRA;
+    if (hasRA) $('d-ra').innerHTML = dh(s.totalRA) + `<span class="sub">indemnités ${dh(s.totalIRA)}</span>`;
+    $('d-total').innerHTML = dh(s.coutTotal) + `<span class="sub">dont intérêts ${dh(s.totalInterets)} · assurance ${dh(s.totalAssurance)}${hasRA ? ` · indemnités ${dh(s.totalIRA)}` : ''}</span>`;
 
-    drawDonut(capital, totalInterets, totalAssurance);
-    drawBars(aggregateByYear(rows));
+    drawDonut(capital, s.totalInterets, s.totalAssurance, s.totalIRA);
+    drawBars(aggregateByYear(s.rows));
+
+    $('compare-panel').hidden = !hasRA;
+    if (hasRA) drawCompare(base, scen, mode);
+
+    saveState();
+  }
+
+  // --- persistance des derniers choix ---
+  const STORE_KEY = 'credisim-state-v1';
+  function saveState() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        profile: profileSel.value,
+        type: activeEntry().type,
+        montant: montantNum.value, duree: dureeNum.value, taux: tauxNum.value,
+        assurance: assuranceNum.value, frais: fraisNum.value,
+        edited: { taux: userEditedTaux, montant: userEditedMontant, duree: userEditedDuree },
+        raMode: currentMode(), ira: iraNum.value, ra: raList,
+      }));
+    } catch (e) {}
+  }
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || null; } catch (e) { return null; }
+  }
+
+  // --- remboursements anticipés : liste éditable ---
+  function renderRA() {
+    const list = $('ra-list');
+    if (!raList.length) {
+      list.innerHTML = '<p class="ra-empty">Aucun versement — ajoutez-en pour simuler un scénario.</p>';
+      return;
+    }
+    list.innerHTML = '<div class="ra-row ra-head"><span>Mois</span><span>Montant (DH)</span><span></span></div>' +
+      raList.map((r, k) => `
+        <div class="ra-row">
+          <input type="number" min="1" step="1" data-k="${k}" data-f="mois" value="${r.mois}" aria-label="Mois du versement ${k+1}">
+          <input type="number" min="0" step="1000" data-k="${k}" data-f="montant" value="${r.montant}" aria-label="Montant du versement ${k+1}">
+          <button class="ra-del" type="button" data-del="${k}" aria-label="Supprimer le versement ${k+1}">×</button>
+        </div>`).join('');
   }
 
   // --- wiring ---
@@ -840,12 +1074,70 @@
   tauxNum.addEventListener('input', () => { userEditedTaux = true; recompute(); });
   assuranceNum.addEventListener('input', recompute);
   fraisNum.addEventListener('input', recompute);
+  iraNum.addEventListener('input', recompute);
+  document.querySelectorAll('input[name="ra-mode"]').forEach(r => r.addEventListener('change', recompute));
 
-  // init
+  const raListEl = $('ra-list');
+  raListEl.addEventListener('input', e => {
+    const k = e.target.dataset.k, f = e.target.dataset.f;
+    if (k === undefined || !raList[k]) return;
+    raList[k][f] = e.target.value;
+    recompute();  // pas de re-render : on garde le focus dans le champ
+  });
+  raListEl.addEventListener('click', e => {
+    const k = e.target.dataset.del;
+    if (k === undefined) return;
+    raList.splice(+k, 1);
+    renderRA();
+    recompute();
+  });
+  $('ra-add').addEventListener('click', () => {
+    const nMonths = parseInt(dureeNum.value) || 12;
+    const capital = parseFloat(montantNum.value) || 0;
+    const last = raList.length ? Math.round(parseFloat(raList[raList.length - 1].mois)) || 0 : 0;
+    const mois = Math.max(1, Math.min(last + 12, nMonths - 1));
+    const montant = Math.max(1000, Math.round(capital * 0.1 / 1000) * 1000);
+    raList.push({ mois, montant });
+    renderRA();
+    recompute();
+  });
+
+  // init — restaure les derniers choix s'ils existent
+  const saved = loadState();
   populateProfiles();
+  if (saved && profiles.includes(saved.profile)) profileSel.value = saved.profile;
   populateTypes();
+  if (saved) {
+    const idx = currentEntries().findIndex(d => d.type === saved.type);
+    if (idx >= 0) typeSel.value = String(idx);
+  }
   fraisNum.value = 0;
+  iraNum.value = 1;
   applyEntryDefaults(activeEntry(), true);
+  if (saved) {
+    const setIf = (el, v) => { if (v !== undefined && v !== null && v !== '') el.value = v; };
+    setIf(montantNum, saved.montant);
+    setIf(dureeNum, saved.duree);
+    setIf(tauxNum, saved.taux);
+    setIf(assuranceNum, saved.assurance);
+    setIf(fraisNum, saved.frais);
+    setIf(iraNum, saved.ira);
+    if (saved.edited) {
+      userEditedTaux = !!saved.edited.taux;
+      userEditedMontant = !!saved.edited.montant;
+      userEditedDuree = !!saved.edited.duree;
+    }
+    montantRange.max = Math.max(montantRange.max * 1, (parseFloat(montantNum.value) || 0));
+    syncMontant(false);
+    syncDuree(false);
+    if (Array.isArray(saved.ra)) {
+      raList = saved.ra.filter(r => r && r.mois !== undefined && r.montant !== undefined)
+        .map(r => ({ mois: r.mois, montant: r.montant }));
+    }
+    const modeRadio = document.querySelector(`input[name="ra-mode"][value="${saved.raMode}"]`);
+    if (modeRadio) modeRadio.checked = true;
+  }
+  renderRA();
   recompute();
 
   // --- theme toggle ---
